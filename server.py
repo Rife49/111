@@ -1,5 +1,6 @@
 from flask import Flask, jsonify, request
 import sqlite3
+from datetime import date
 
 
 app = Flask(__name__) # Create a Flask instance
@@ -15,6 +16,20 @@ def init_db():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             username TEXT UNIQUE NOT NULL,
             password TEXT NOT NULL
+        )
+    """)
+    
+    
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS expenses (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            title TEXT,
+            description TEXT NOT NULL,
+            amount INTEGER NOT NULL,
+            data TEXT NOT NULL,
+            category TEXT OT NULL,
+            user_id INTEGER,
+            FOREIGN KEY(user_id) REFERENCES users(id)
         )
     """)
     
@@ -72,6 +87,95 @@ def get_users():
         "message": "User created successfully",
         "data": users 
     })
+    
+# Get http://127.0.0.1:5000/api/users/2
+@app.get("/api/users/<int:user_id>")
+def get_user_by_id(user_id):
+    connection = sqlite3.connect(DB_NAME)
+    connection.row_factory = sqlite3.Row
+    cursor = connection.cursor()
+    cursor.execute("SELECT id, username FROM users WHERE id = ?", (user_id,))
+    row = cursor.fetchone()
+    
+    if not row:
+        return jsonify({
+            "success": False,
+            "message": "User not found"
+        }),404
+    
+    print(f"row = {row}")
+    user_information = dict(row)
+    connection.close()
+    
+    return jsonify({
+        "success": True,
+        "message": "User retrieved successfully",
+        "data": user_information
+    }), 200
+    
+    
+# Update 
+
+# Delete http://127.0.0.1:5000/api/users/2
+@app.delete("/api/users/<int:user_id>")
+def delete_user_by_id(user_id):
+    connection = sqlite3.connect(DB_NAME)
+    cursor = connection.cursor()
+    cursor.execute("SELECT id, username FROM users WHERE id = ?", (user_id,))
+    row = cursor.fetchone()
+    
+    if not row:
+        return jsonify({
+            "success": False,
+            "message": "User not found"
+        }),404
+        
+    cursor.execute("DELETE FROM users WHERE id = ?", (user_id,))
+    connection.commit() # Save the connection
+    connection.close() # Close the connection 
+    
+    
+    
+    return jsonify({
+        "success": True,
+        "message": "User deleted successfully",
+    }), 200
+
+# ---Expenses ---
+# POST http://127.0.0.1:5000/api/expenses
+@app.post("/api/expenses")
+def create_expense():
+    new_expense = request.get_json()
+    print(new_expense)
+    
+    title = new_expense.get("title", "")
+    description = new_expense.get("description", "")
+    amount = new_expense.get("amount", 1)
+    date_expense = new_expense.get("date", date.today()) #....
+    category = new_expense.get("category", "") 
+    user_id = new_expense.get("user_id", 2) 
+    
+    connection = sqlite3.connect(DB_NAME)
+    cursor = connection.cursor()
+    cursor.execute("""
+        INSERT INTO expenses (title, description, amount, date, category, user_id)
+        VALUES(?, ?, ?, ?, ?, ?)""", (title, description, amount, date_expense, category, user_id) )
+    connection.commit()
+    connection.close()
+    
+    return jsonify({
+        "success": True,
+        "message": "Expense created successfully",
+    }), 201
+    
+
+
+    
+    
+    
+    
+    return "Working on it"
+    
 
     
 if __name__ == "__main__":
