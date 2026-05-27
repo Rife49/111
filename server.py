@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, render_template
 import sqlite3
 from datetime import date
 
@@ -279,10 +279,22 @@ def delete_expense_by_id (expense_id):
 
 
 
+# ---- Front end ----
+@app.get("/")
+@app.get("/home")
+@app.get("/index")
+def home():
+    return render_template("home.html")
 
-
-
-
+@app.get("/about")
+def about():
+    student_data = {
+        "name": "Rife",
+        "cohort": 66,
+        "year": 2026
+    }
+    
+    return render_template("about.html", student=student_data)
 
 
 if __name__ == "__main__":
