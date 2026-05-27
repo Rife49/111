@@ -114,9 +114,39 @@ def get_user_by_id(user_id):
     }), 200
     
     
-# Update 
+# PUT http://127.0.0.1:5000/api/users/2
+@app.put("/api/users/<int:user_id>")
+def update_user_by_id(user_id):
+    updated_user = request.get_json()
+    username = updated_user["username"]
+    password = updated_user["password"]
+    
+    connection = sqlite3.connect(DB_NAME)
+    cursor = connection.cursor()
+    
+    # Validation
+    cursor.execute("SELECT id FROM users WHERE id = ?", (user_id,))
+    row = cursor.fetchone()
+    
+    if not row:
+        return jsonify({
+            "success": True,
+            "message": "User not found"
+        }), 404
+    
+    cursor.execute("UPDATE users SET username=?, password=? WHERE id=?", (username, password, user_id))
+    connection.commit()
+    connection.close()
+    
+    return jsonify({
+        "success": True,
+        "message": "USer updated Successfully"
+    }), 200
+    
 
-# Delete http://127.0.0.1:5000/api/users/2
+
+
+# Delete 
 @app.delete("/api/users/<int:user_id>")
 def delete_user_by_id(user_id):
     connection = sqlite3.connect(DB_NAME)
@@ -170,14 +200,91 @@ def create_expense():
     
 
 
-    
-    
-    
-    
-    return "Working on it"
-    
 
+# GET http://127.0.0.1:5000/api/expenses
+@app.get ("/api/expenses")
+def get_expenses():
+    connection = sqlite3.connect(DB_NAME)
+    connection.row_factory = sqlite3.Row 
+    cursor = connection.cursor()
+    cursor.execute("SELECT * FROM expenses")
+    rows = cursor.fetchall()
+    print(f"expenses {rows}")
     
+    expenses = []
+    for row in rows:
+        print(f"row = {dict(row)}")
+        expenses.append(dict(row))
+    
+    return jsonify({
+        "success": True,
+        "message": "Expenses retrieved successfully",
+        "data": expenses
+    }), 200
+    
+    
+# GET http://127.0.0.1:5000/api/expenses/2
+@app.get("/api/expenses/<int:expense_id>")
+def get_expense_by_id(expense_id):
+    connection = sqlite3.connect(DB_NAME)
+    connection.row_factory = sqlite3.Row
+    cursor = connection.cursor()
+    cursor.execute("SELECT * FROM expenses WHERE id = ?", (expense_id,))
+    row = cursor.fetchone()
+    
+    if not row:
+        return jsonify({
+            "success": False,
+            "message": "Expense not found"
+        }), 404
+        
+    print(f"row = {row}")
+    expense = dict(row)
+    connection.close()
+    
+    return jsonify({
+        "success": True,
+        "message": "Expenses retrieved successfully",
+        "data": expense
+    }), 200
+    
+# Update
+
+
+# DELETE http://127.0.0.1:5000/api/expenses/2
+@app.delete("/api/expenses/<int:expense_id>")
+def delete_expense_by_id (expense_id):
+    connection = sqlite3.connect(DB_NAME)
+    cursor = connection.cursor()
+    cursor.execute("SELECT * FROM expenses WHERE id = ?", (expense_id,))
+    row = cursor.fetchone()
+    
+    if not row:
+        return jsonify({
+            "success": False,
+            "message": "Expense not found"
+        }), 404
+    
+    
+    cursor.execute("DELETE FROM expenses WHERE id = ?", (expense_id,))
+    connection.commit() 
+    connection.close()
+    
+    
+    return jsonify({
+        "success": True,
+        "message": "Expenses retrieved successfully",
+    }), 200
+
+
+
+
+
+
+
+
+
+
 if __name__ == "__main__":
     init_db()
     app.run(debug=True)
